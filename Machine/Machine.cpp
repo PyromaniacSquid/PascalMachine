@@ -2,9 +2,19 @@
 //
 
 #include <iostream>
+#include "PascalTranslator.h"
+
 
 int main()
 {
-    std::cout << "Hello World!\n";
+	string path = "TestScript.txt";
+	try {
+		PascalTranslator machine(path);
+		machine.Print();
+	}
+	catch (exception ex) {
+		cout << ex.what() << endl;;
+	}
+	return 0;
 }
 

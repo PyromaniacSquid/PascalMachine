@@ -1,2 +1,3 @@
 M:\Усач\PascalMachine\Machine\Debug\Machine.exe
 M:\Усач\PascalMachine\Machine\Debug\Machine.pdb
+D:\PascalMachine\Machine\Debug\Machine.exe

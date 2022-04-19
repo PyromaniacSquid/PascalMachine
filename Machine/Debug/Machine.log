@@ -1,2 +1,3 @@
-﻿  Machine.cpp
-  Machine.vcxproj -> M:\Усач\PascalMachine\Machine\Debug\Machine.exe
+﻿  PascalTranslator.cpp
+D:\PascalMachine\Machine\PascalTranslator.cpp(315): warning C4715: PascalTranslator::check_Program_Name: значение возвращается не при всех путях выполнения
+  Machine.vcxproj -> D:\PascalMachine\Machine\Debug\Machine.exe
