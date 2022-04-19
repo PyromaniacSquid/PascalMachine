@@ -1,8 +1,4 @@
 Program whatever;
-var a, b, c : integer;
-begin
-a > b;
-b <= a;
-c <> a;
-c := 21;
-end.
+var b : integer;
+var a : boolean;
+procedure pizda (x, y, z : integer; ax, ay, az: boolean);

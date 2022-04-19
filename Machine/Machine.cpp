@@ -11,6 +11,7 @@ int main()
 	try {
 		PascalTranslator machine(path);
 		machine.Print();
+		machine.Translate();
 	}
 	catch (exception ex) {
 		cout << ex.what() << endl;;

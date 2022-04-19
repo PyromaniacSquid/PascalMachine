@@ -5,6 +5,7 @@
 #include <string>
 #include <set>
 #include <stdexcept>
+#include <regex>
 using namespace std;
 
 class PascalTranslator {
@@ -86,8 +87,49 @@ public:
 	// Checks Program word and goes deeper(+)
 	bool check_Program_Keyword();
 
-	// Checks Program name word+
-	bool check_Program_Name();
+	// Checks Name Block
+	bool check_Name();
+
+	// Var block
+	bool check_var();
+
+	// Varibales desc block
+	bool check_variables_desc();
+
+	// Varibales list block
+	bool check_variables_list();
+
+	// Procedure list block
+	bool check_procedure();
+
+	// Operations block
+	bool check_op_part();
+
+	// Operations block
+	bool check_op_part_layer2();
+
+	// Operations block
+	bool check_op_part_layer3();
+
+	// Operators block
+	bool check_operators();
+
+	// Read operator
+	bool operator_read();
+
+	// Write operator
+	bool operator_write();
+
+	// Assign operator
+	bool operator_assign();
+
+	// If operator
+	bool operator_if();
+
+	// while-do operator
+	bool operator_while_do();
+
+
 
 	// Debug Purposes
 	
