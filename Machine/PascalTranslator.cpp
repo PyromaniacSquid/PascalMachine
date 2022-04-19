@@ -330,7 +330,7 @@ bool PascalTranslator::check_Program_Keyword() {
 						//...
 					}
 					else if (CurrentWord() == "procedure") {
-						ToNext();
+						//ToNext();
 						return check_procedure();
 					}
 				}
@@ -528,7 +528,32 @@ bool PascalTranslator::check_procedure() {
 							ToNext();
 						}
 						if (CurrentWord() == "begin") {
-							// op part;
+							check_op_part();
+							//ToNext();
+							if (CurrentWord() == ";") {
+								ToNext();
+								if (CurrentWord() == "begin") {
+									if (NextWord() == "end") {
+										ToNext();
+										ToNext();
+										if (CurrentWord() == ".") return true;
+									}
+									else {
+										if (!check_op_part()) return false;
+										else {
+											if (CurrentWord() == ".") return true;
+											else return false;
+										}
+									}
+								}
+								if (CurrentWord() == "var") {
+									return check_var();
+								}
+							}
+							else {
+								cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+								return false;
+							}
 						}
 						else {
 							cout << "Error on line " << to_string(LineIndex) << ": var/begin expected" << endl;
@@ -582,6 +607,7 @@ bool PascalTranslator::check_op_part() {
 		}
 		// Normal operations
 		if (!check_operators()) return false;
+		else ToNext();
 	}
 	return true;
 }
@@ -605,7 +631,8 @@ bool PascalTranslator::check_op_part_layer2() {
 			ToNext(); // whatever else, may be end
 		}
 		// Normal operations
-		if (!check_operators()) return false;
+		if (!check_operators())  return false;
+		else ToNext();
 	}
 	return true;
 }
@@ -617,6 +644,7 @@ bool PascalTranslator::check_op_part_layer3() {
 	while (CurrentWord() != "end") {
 		// Normal operations
 		if (!check_operators()) return false;
+		else ToNext();
 	}
 	return true;
 }
@@ -647,7 +675,14 @@ bool PascalTranslator::operator_read() {
 	ToNext();
 	if (CurrentWord() == "(") {
 		ToNext();
-		if (CurrentWord() == ")") return true;
+		if (CurrentWord() == ")") {
+			ToNext();
+			if (CurrentWord() == ";") return true;
+			else {
+				cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+				return false;
+			}
+		}
 		// Parameter is single identifier
 		if (!check_Name()) {
 			cout << "Error on line " << to_string(LineIndex) << ": identifier expected" << endl;
@@ -655,7 +690,14 @@ bool PascalTranslator::operator_read() {
 		}
 		else {
 			ToNext();
-			if (CurrentWord() == ")") return true;
+			if (CurrentWord() == ")") {
+				ToNext();
+				if (CurrentWord() == ";") return true;
+				else {
+					cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+					return false;
+				}
+			}
 			else {
 				cout << "Error on line " << to_string(LineIndex) << ": ')' expected" << endl;
 				return false;
@@ -671,18 +713,73 @@ bool PascalTranslator::operator_read() {
 // Write operator
 bool PascalTranslator::operator_write() {
 	// Current word is write
-	return false;
+	ToNext();
+	if (CurrentWord() == "(") {
+		ToNext();
+		if (CurrentWord() == ")") {
+			ToNext();
+			if (CurrentWord() == ";") return true;
+			else {
+				cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+				return false;
+			}
+		}
+		// Parameter is single identifier
+		if (!expression()) {
+			cout << "Error on line " << to_string(LineIndex) << ": expression expected" << endl;
+			return false;
+		}
+		else {
+			ToNext();
+			if (CurrentWord() == ")") {
+				ToNext();
+				if (CurrentWord() == ";") return true;
+				else {
+					cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+					return false;
+				}
+			}
+			else {
+				cout << "Error on line " << to_string(LineIndex) << ": ')' expected" << endl;
+				return false;
+			}
+		}
+	}
+	else {
+		cout << "Error on line " << to_string(LineIndex) << ": '(' expected" << endl;
+		return false;
+	}
 }
 
 // Assign operator
 bool PascalTranslator::operator_assign() {
 	// Current word is <name>
+	ToNext();
+	// Expected :=
+	if (CurrentWord() == ":=") {
+		ToNext();
+		if (check_Name()) {
+			return true;
+		}
+		else if (assign_expr()) {
+			return true;
+		}
+		else {
+			cout << "Error on line " << to_string(LineIndex) << ": identifier or expression expected" << endl;
+			return false;
+		}
+	}
+	else {
+		cout << "Error on line " << to_string(LineIndex) << ": ':=' expected" << endl;
+		return false;
+	}
 	return false;
 }
 
 // If operator
 bool PascalTranslator::operator_if() {
 	// Current word is if
+	
 	return false;
 }
 
@@ -692,7 +789,100 @@ bool PascalTranslator::operator_while_do(){
 	return false;
 }
 
+// expression
+bool PascalTranslator::expression() {
+	if (term()) {
+		ToNext();
+		while (CurrentWord() == "+" || CurrentWord() == "-") {
+			ToNext();
+			if (term()) {
+				ToNext();
+			}
+			else return false;
+		}
+		return true;
+	}
+	return false;
+}
 
+// assign_expr
+bool PascalTranslator::assign_expr() {
+	return false;
+}
+
+
+// term
+bool PascalTranslator::term() {
+	if (factor()) {
+		ToNext();
+		while (CurrentWord() == "*" || CurrentWord() == "/") {
+			ToNext();
+			if (factor()) {
+				ToNext();
+			}
+			else return false;
+		}
+		return true;
+	}
+	else return false;
+}
+
+//factor
+bool PascalTranslator::factor() {
+	if (number()) return true;
+	if (CurrentWord() == "(") return paranthesis_sequence();
+	if (ReservedWords.find(CurrentWord()) != ReservedWords.end()) return check_Name();
+	else return false;
+}
+
+// number
+bool PascalTranslator::number() {
+	return (regex_match(CurrentWord(), regex("-?[0-9]*")));
+}
+
+//paranthesis sequence
+bool PascalTranslator::paranthesis_sequence() {
+	if (CurrentWord() == "(") {
+		ToNext();
+		if (expression()) {
+			if (CurrentWord() == ")") return true;
+			else return false;
+		}
+		else return false;
+	}
+	else return false;
+}
+
+
+//bool expr
+bool PascalTranslator::bool_expr() {
+	return false;
+}
+
+//boolean expression
+bool PascalTranslator::bool_expression() {
+	return false;
+}
+
+//comparison
+bool PascalTranslator::comparison() {
+	return false;
+}
+
+// bool term
+bool PascalTranslator::bool_term() {
+	return false;
+}
+// bool factor
+bool PascalTranslator::bool_factor() {
+	if (CurrentWord() == "true"
+		|| CurrentWord() == "True"
+		|| CurrentWord() == "False"
+		|| CurrentWord() == "false") {
+		return true;
+	}
+	return false;
+}
 
 // Debug Purposes
 

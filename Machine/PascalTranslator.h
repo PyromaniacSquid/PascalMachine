@@ -129,6 +129,40 @@ public:
 	// while-do operator
 	bool operator_while_do();
 
+	// expression
+	bool expression();
+
+	// assign_expr
+	bool assign_expr();
+
+	// term
+	bool term();
+
+	//factor
+	bool factor();
+
+	// number
+	bool number();
+
+	//paranthesis sequence
+	bool paranthesis_sequence();
+
+	//bool expr
+	bool bool_expr();
+
+	//boolean expression
+	bool bool_expression();
+
+	//comparison
+	bool comparison();
+
+	// bool term
+	bool bool_term();
+
+	// bool factor
+	bool bool_factor();
+
+	
 
 
 	// Debug Purposes

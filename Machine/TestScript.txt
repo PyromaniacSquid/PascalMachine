@@ -1,4 +1,8 @@
 Program whatever;
-var b : integer;
-var a : boolean;
 procedure pizda (x, y, z : integer; ax, ay, az: boolean);
+begin
+read(govno);
+end;
+begin
+read(mocha);
+end.
