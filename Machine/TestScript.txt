@@ -1,8 +1,22 @@
 Program whatever;
-procedure pizda (x, y, z : integer; ax, ay, az: boolean);
+procedure proc1 (x, y, z : integer);
 begin
-read(govno);
 end;
+
+var var1, var2, var3 :boolean;
+var var4, var5, var6 : integer;
+
+procedure proc2 (a, b : integer; a1, a2 : boolean);
 begin
-read(mocha);
+z := true or ((12+4)*a > b);
+proc();
+proc(a,b,c,d);
+proc(a>b*c);
+proc(true or a and c);
+proc(a or (12 > -3*a));
+end;
+
+begin
+variable := s;
+proc2(s > 0);
 end.

@@ -11,7 +11,12 @@ int main()
 	try {
 		PascalTranslator machine(path);
 		machine.Print();
-		machine.Translate();
+		if (machine.Translate()) {
+			cout << "Program is correct" << endl;
+		}
+		else {
+			cout << "Program is incorrect, read errors log" << endl;
+		}
 	}
 	catch (exception ex) {
 		cout << ex.what() << endl;;

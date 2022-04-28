@@ -80,7 +80,7 @@ public:
 
 
 	// Machine logic
-	
+
 	// Starts translation process, returns true if script is correct
 	bool Translate();
 
@@ -162,8 +162,14 @@ public:
 	// bool factor
 	bool bool_factor();
 
-	
+	// call proc
+	bool call_proc();
 
+	// Bool operator check
+	bool check_bool_operator_str(string str);
+
+	// Bool paranthesis sequence check
+	bool paranthesis_sequence_bool();
 
 	// Debug Purposes
 	
