@@ -10,7 +10,7 @@ int main()
 	string path = "TestScript.txt";
 	try {
 		PascalTranslator machine(path);
-		machine.Print();
+		//machine.Print();
 		if (machine.Translate()) {
 			cout << "Program is correct" << endl;
 		}

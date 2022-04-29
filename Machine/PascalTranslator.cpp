@@ -282,8 +282,7 @@ bool PascalTranslator::Translate() {
 // Checks Program word and goes deeper
 bool PascalTranslator::check_Program_Keyword() {
 	// Technically casing doesn't matter it can be PrOgRaM, but we won't do that
-	if (CurrentWord() != "program"
-		&& CurrentWord() != "Program") {
+	if (CurrentWord() != "program") {
 		cout << "Error on line " + to_string(WordLine()) + ": keyword Program expected" << endl;
 		return false;
 	}
@@ -308,7 +307,15 @@ bool PascalTranslator::check_Program_Keyword() {
 						if (NextWord() == "end") {
 							ToNext();
 							if (ToNext()) {
-								if (CurrentWord() == ".") return true;
+								if (CurrentWord() == ".") {
+									if (ContainerIndex == ContainerLength - 1) {
+										return true;
+									}
+									else {
+										cout << "Error on line " << to_string(WordLine()) << ": nothing should follow end of program" << endl;
+										return false;
+									}
+								}
 								else {
 									cout << "Error on line " + to_string(WordLine()) + ": '.' expected" << endl;
 									return false;
@@ -321,7 +328,9 @@ bool PascalTranslator::check_Program_Keyword() {
 						}
 						// Body block:
 						else {
-							check_op_part();
+							if (!check_op_part()) {
+								return false;
+							}
 							// end -> .
 							ToNext();
 							if (CurrentWord() == ".") {
@@ -338,9 +347,8 @@ bool PascalTranslator::check_Program_Keyword() {
 						}
 					}
 					else if (CurrentWord() == "var") {
-						//ToNext();
-						check_var();
-						//...
+						ToNext();
+						return check_var();
 					}
 					else if (CurrentWord() == "procedure") {
 						//ToNext();
@@ -352,6 +360,10 @@ bool PascalTranslator::check_Program_Keyword() {
 					cout << "Error on line " + to_string(WordLine()) + ": program body/variable field/procedure field expected" << endl;
 					return false;
 				}
+			}
+			else {
+				cout << "Error on line " + to_string(WordLine()) + ": invalid program name" << endl;
+				return false;
 			}
 		}
 		else {
@@ -376,19 +388,22 @@ bool PascalTranslator::check_Name() {
 bool PascalTranslator::check_var() {
 	// Check for variable description blocks until we leave var block
 	if (check_variables_desc()) {
-		// Keyword defines following steps:
-		if (ToNext()) {
-			if (CurrentWord() == "var") {
-				return check_var();
-			}
-			else if (CurrentWord() == "begin") {
-				// There can be an empty body, check that as well
-				if (NextWord() == "end") {
-					ToNext();
-					if (ToNext()) {
-						if (CurrentWord() == ".") return true;
+	// Keyword defines following steps:
+		if (CurrentWord() == "var") {
+			ToNext();
+			return check_var();
+		}
+		else if (CurrentWord() == "begin") {
+			// There can be an empty body, check that as well
+			if (NextWord() == "end") {
+				ToNext();
+				if (ToNext()) {
+					if (CurrentWord() == ".") {
+						if (ContainerIndex == ContainerLength - 1) {
+							return true;
+						}
 						else {
-							cout << "Error on line " + to_string(WordLine()) + ": '.' expected" << endl;
+							cout << "Error on line " << to_string(WordLine()) << ": nothing should follow end of program" << endl;
 							return false;
 						}
 					}
@@ -397,84 +412,93 @@ bool PascalTranslator::check_var() {
 						return false;
 					}
 				}
-				// Body block:
 				else {
-					check_op_part();
-					// end -> .
-					ToNext();
-					if (CurrentWord() == ".") {
-						if (ContainerIndex == ContainerLength - 1) return true;
-						else {
-							cout << "Error on line " + to_string(WordLine()) + ": nothing should follow \'.\'" << endl;
-							return false;
-						}
-					}
+					cout << "Error on line " + to_string(WordLine()) + ": '.' expected" << endl;
+					return false;
+				}
+			}
+			// Body block:
+			else {
+				check_op_part();
+				// end -> .
+				ToNext();
+				if (CurrentWord() == ".") {
+					if (ContainerIndex == ContainerLength - 1) return true;
 					else {
-						cout << "Error on line " + to_string(WordLine()) + ": \'.\' expected" << endl;
+						cout << "Error on line " + to_string(WordLine()) + ": nothing should follow \'.\'" << endl;
 						return false;
 					}
 				}
-			}
-			else if (CurrentWord() == "procedure") {
-				return check_procedure();
-				//return false;
+				else {
+					cout << "Error on line " + to_string(WordLine()) + ": \'.\' expected" << endl;
+					return false;
+				}
 			}
 		}
-		else {
-			cout << "Error on line " << to_string(WordLine()) << ": program body, variable/procedure declaration expected" << endl;
-			return false;
+		else if (CurrentWord() == "procedure") {
+			return check_procedure();
+			//return false;
 		}
+		
 	}
 }
 
 // Varibales desc block
 bool PascalTranslator::check_variables_desc() {
 	// Get into var list
-	if (check_variables_list()) {
-		if (CurrentWord() == ":") {
-			if (ToNext()) {
-				if (CurrentWord() == "Integer"
-					|| CurrentWord() == "integer"
-					|| CurrentWord() == "Boolean"
-					|| CurrentWord() == "boolean")
-				{
-					// Expect ";"
-					if (ToNext()) {
-						if (CurrentWord() == ";") {
-							return true;
+	while (check_Name()) {
+		if (check_variables_list()) {
+			if (CurrentWord() == ":") {
+				if (ToNext()) {
+					if ( CurrentWord() == "integer"
+						|| CurrentWord() == "boolean")
+					{
+						
+						if (ToNext()) {
+							if (CurrentWord() == ";") {
+								ToNext();
+							}
+							else {
+								cout << "Error on line " << to_string(WordLine()) << ": ';' expected" << endl;
+								return false;
+							}
 						}
 						else {
-							cout << "Error on line " << to_string(WordLine()) << ": ';' expected" << endl;
+							cout << "Error on line " << to_string(WordLine()) << ": ';' expected, but variable description is unfinished" << endl;
 							return false;
 						}
 					}
 					else {
-						cout << "Error on line " << to_string(WordLine()) << ": ';' expected, but variable description is unfinished" << endl;
+						cout << "Error on line " << to_string(WordLine()) << ": unknown type " << CurrentWord() << endl;
 						return false;
 					}
 				}
 				else {
-					cout << "Error on line " << to_string(WordLine()) << ": unknown type " << CurrentWord() << endl;
+					cout << "Error on line " << to_string(WordLine()) << ": variable type expected (Integer/Boolean)" << endl;
 					return false;
 				}
 			}
 			else {
-				cout << "Error on line " << to_string(WordLine()) << ": variable type expected (Integer/Boolean)" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": ':' or ',' expected" << endl;
 				return false;
 			}
 		}
-		else {
-			cout << "Error on line " << to_string(WordLine()) << ": ':' or ',' expected" << endl;
-			return false;
-		}
 	}
-		
+	//Check if we left because a reserved word was used
+	if (ReservedState[ContainerIndex] && 
+		CurrentWord()!="procedure" &&
+		CurrentWord()!="var" &&
+		CurrentWord()!="begin") {
+		cout << "Error on line " << to_string(WordLine()) << ": \"" << CurrentWord() << "\" cannot be used as identifier"<< endl;
+		return false;
+	}
+	return true;
 }
 
 // Varibales list block
 bool PascalTranslator::check_variables_list() {
-	if (NextWord() != "") {
-		ToNext();
+	//if (NextWord() != "") {
+	//	ToNext();
 		// identifier is required after var
 		if (check_Name()) {
 			// it can be followed by ',' and list
@@ -514,11 +538,11 @@ bool PascalTranslator::check_variables_list() {
 			cout << "Error on line " << to_string(WordLine()) << ": correct identifier expected" << endl;
 			return false;
 		}
-	}
-	else {
+	//}
+	/*else {
 		cout << "Error on line " << to_string(WordLine()) << ": expected identifier" << endl;
 		return false;
-	}
+	}*/
 }
 
 // Procedure list block
@@ -537,6 +561,7 @@ bool PascalTranslator::check_procedure() {
 					return false;
 				}
 				while (NextWord() != ")") {
+					ToNext();
 					if (check_variables_list()) {
 						// has to be followed by ':'
 						if (CurrentWord() == ":") {
@@ -572,8 +597,9 @@ bool PascalTranslator::check_procedure() {
 					if (CurrentWord() == ";") {
 						ToNext();
 						while (CurrentWord() == "var") {
-							check_variables_desc();
 							ToNext();
+							check_variables_desc();
+							//ToNext();
 						}
 						if (CurrentWord() == "begin") {
 							check_op_part();
@@ -583,6 +609,7 @@ bool PascalTranslator::check_procedure() {
 								ToNext();
 								// S18->S4
 								if (CurrentWord() == "var") {
+									ToNext();
 									return check_var();
 								}
 								if (CurrentWord() == "procedure") {
@@ -595,7 +622,13 @@ bool PascalTranslator::check_procedure() {
 									ToNext();
 									if (CurrentWord() == ".") {
 										// If it's the last word, then it's ok
-										return ContainerIndex == ContainerLength-1;
+										if (ContainerIndex == ContainerLength - 1) {
+											return true;
+										}
+										else {
+											cout << "Error on line " << to_string(WordLine()) << ": nothing should follow end of program" << endl;
+											return false;
+										}
 									}
 								}
 								else {
@@ -629,7 +662,7 @@ bool PascalTranslator::check_procedure() {
 			}
 		}
 		else {
-			cout << "Error on line " << to_string(WordLine()) << ": procedure identifier expected" << endl;
+			cout << "Error on line " << to_string(WordLine()) <<  ": \"" << CurrentWord() << "\" can't be used as procedure identifier" << endl;
 			return false;
 		}
 	}
@@ -647,7 +680,7 @@ bool PascalTranslator::check_op_part() {
 	while (CurrentWord() != "end") {
 		if (CurrentWord() == "begin") {
 			// Get in next layer and check if it succeeded
-			if (!check_op_part_layer2()) {
+			if (!check_op_part()) {
 				return false;
 			}
 			// Current word is end
@@ -659,7 +692,7 @@ bool PascalTranslator::check_op_part() {
 			ToNext(); // whatever else, may be end
 		}
 		// Normal operations
-		if (!check_operators()) return false;
+		else if (!check_operators()) return false;
 		//else ToNext();
 	}
 	return true;
@@ -696,6 +729,10 @@ bool PascalTranslator::check_op_part_layer3() {
 	ToNext();
 	while (CurrentWord() != "end") {
 		// Normal operations
+		if (CurrentWord() == "begin") {
+			cout << "Error on line " + to_string(WordLine()) + ": no more begin-end blocks allowed" << endl;
+			return false;
+		}
 		if (!check_operators()) return false;
 		//else ToNext();
 	}
@@ -721,6 +758,10 @@ bool PascalTranslator::check_operators() {
 		if (!call_proc())
 			return operator_assign();
 		else return true;
+	}
+	else {
+		cout << "Error on line " << to_string(WordLine()) << ": unknown operation or incorrect identifier" << endl;
+		return false;
 	}
 }
 
@@ -1051,7 +1092,11 @@ bool PascalTranslator::paranthesis_sequence() {
 				ToNext();
 				return true;
 			}
-			else return false;
+			else {
+				cout << "Error on line " << to_string(WordLine()) << ": incorrect paranthesis sequence" << endl;
+				exit(1);
+				return false;
+			}
 		}
 		else return false;
 	}
@@ -1196,39 +1241,6 @@ bool PascalTranslator::paranthesis_sequence_bool() {
 		// Finishes on )
 		return ToNext();
 	}
-	
-	/*if (CurrentWord() == "(") {
-		ToNext();
-		if (assign_expr()) {
-			if (CurrentWord() == ")")
-			{
-				ToNext();
-				return true;
-			}
-			else return false;
-		}
-	*/
-		/*
-		if (expression()) {
-			// Current word after expression() is its last operator
-			// That lets us check whether the rest is boolean operator + smth, to detect boolean expression
-			// But for that we need to make sure that next word is a boolean operator
-			// In trivial case we have a variable/number which is expression and a part of bool_expr
-			if (check_bool_operator_str(NextWord()) || NextWord() == "or" || NextWord() == "and") {
-				if (!bool_expression()) {
-					cout << "Error on line " << to_string(WordLine()) << ": incorrect boolean expression" << endl;
-					return false;
-				}
-				else {
-					ToNext();
-					if (CurrentWord() == ")") return true;
-					else return false;
-				}
-			}
-			// Else it was just an arithmetic expression
-			return true;
-		}*/
-	
 	else return false;
 }
 
