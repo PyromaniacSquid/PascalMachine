@@ -56,6 +56,7 @@ bool PascalTranslator::is_boolean_operator(char c) {
 bool PascalTranslator::is_text_delimiter(char c) {
 	return c == ' '
 		|| c == '\n'
+		|| c == '\t'
 		;
 }
 
@@ -156,7 +157,7 @@ bool PascalTranslator::Load(string path) {
 					}
 					// Throw an exception if we see EOF after an operator - no doubts
 					else {
-						string err_msg = "Error in line " + to_string(LineIndex) + ": script unfinished";
+						string err_msg = "Error in line " + to_string(WordLine()) + ": script unfinished";
 						throw std::runtime_error(err_msg);
 					}
 					break;
@@ -176,7 +177,7 @@ bool PascalTranslator::Load(string path) {
 					}
 					// Throw an exception if we see EOF after an operator - no doubts
 					else {
-						string err_msg = "Error in line " + to_string(LineIndex) + ": script unfinished";
+						string err_msg = "Error in line " + to_string(WordLine()) + ": script unfinished";
 						throw std::runtime_error(err_msg);
 					}
 					break;
@@ -190,7 +191,7 @@ bool PascalTranslator::Load(string path) {
 				}
 			}
 			// And i guess all other symbols will be unrecognizable
-			else throw std::runtime_error("Unknow symbol " + string(1,ch_buffer) + " in line " + to_string(LineIndex));
+			else throw std::runtime_error("Unknow symbol " + string(1,ch_buffer) + " in line " + to_string(WordLine()));
 		}
 		if (!str_buffer.empty()) {
 			AddWord(str_buffer, LineIndex, is_reserved_word(str_buffer));
@@ -381,7 +382,38 @@ bool PascalTranslator::check_var() {
 				return check_var();
 			}
 			else if (CurrentWord() == "begin") {
-				return false;
+				// There can be an empty body, check that as well
+				if (NextWord() == "end") {
+					ToNext();
+					if (ToNext()) {
+						if (CurrentWord() == ".") return true;
+						else {
+							cout << "Error on line " + to_string(WordLine()) + ": '.' expected" << endl;
+							return false;
+						}
+					}
+					else {
+						cout << "Error on line " + to_string(WordLine()) + ": '.' expected" << endl;
+						return false;
+					}
+				}
+				// Body block:
+				else {
+					check_op_part();
+					// end -> .
+					ToNext();
+					if (CurrentWord() == ".") {
+						if (ContainerIndex == ContainerLength - 1) return true;
+						else {
+							cout << "Error on line " + to_string(WordLine()) + ": nothing should follow \'.\'" << endl;
+							return false;
+						}
+					}
+					else {
+						cout << "Error on line " + to_string(WordLine()) + ": \'.\' expected" << endl;
+						return false;
+					}
+				}
 			}
 			else if (CurrentWord() == "procedure") {
 				return check_procedure();
@@ -389,7 +421,7 @@ bool PascalTranslator::check_var() {
 			}
 		}
 		else {
-			cout << "Error on line " << to_string(LineIndex) << ": program body, variable/procedure declaration expected" << endl;
+			cout << "Error on line " << to_string(WordLine()) << ": program body, variable/procedure declaration expected" << endl;
 			return false;
 		}
 	}
@@ -412,27 +444,27 @@ bool PascalTranslator::check_variables_desc() {
 							return true;
 						}
 						else {
-							cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+							cout << "Error on line " << to_string(WordLine()) << ": ';' expected" << endl;
 							return false;
 						}
 					}
 					else {
-						cout << "Error on line " << to_string(LineIndex) << ": ';' expected, but variable description is unfinished" << endl;
+						cout << "Error on line " << to_string(WordLine()) << ": ';' expected, but variable description is unfinished" << endl;
 						return false;
 					}
 				}
 				else {
-					cout << "Error on line " << to_string(LineIndex) << ": unknown type " << CurrentWord() << endl;
+					cout << "Error on line " << to_string(WordLine()) << ": unknown type " << CurrentWord() << endl;
 					return false;
 				}
 			}
 			else {
-				cout << "Error on line " << to_string(LineIndex) << ": variable type expected (Integer/Boolean)" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": variable type expected (Integer/Boolean)" << endl;
 				return false;
 			}
 		}
 		else {
-			cout << "Error on line " << to_string(LineIndex) << ": ':' or ',' expected" << endl;
+			cout << "Error on line " << to_string(WordLine()) << ": ':' or ',' expected" << endl;
 			return false;
 		}
 	}
@@ -454,17 +486,17 @@ bool PascalTranslator::check_variables_list() {
 						if (check_Name()) {
 							// Go to next "," (next iteration)
 							if (!ToNext()) {
-								cout << "Error on line " << to_string(LineIndex) << ": expected ',' but block is unfinished" << endl;
+								cout << "Error on line " << to_string(WordLine()) << ": expected ',' but block is unfinished" << endl;
 								return false;
 							}
 						}
 						else {
-							cout << "Error on line " << to_string(LineIndex) << ": correct identifier expected" << endl;
+							cout << "Error on line " << to_string(WordLine()) << ": correct identifier expected" << endl;
 							return false;
 						}
 					}
 					else {
-						cout << "Error on line " << to_string(LineIndex) << ": expected identifier, but variable block unfinished" << endl;
+						cout << "Error on line " << to_string(WordLine()) << ": expected identifier, but variable block unfinished" << endl;
 						return false;
 					}
 				}
@@ -474,17 +506,17 @@ bool PascalTranslator::check_variables_list() {
 			}
 			// As usual, if it's followed by nothing, raise error
 			else {
-				cout << "Error on line " << to_string(LineIndex) << ": expected ',' or end of variable block" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": expected ',' or end of variable block" << endl;
 				return false;
 			}
 		}
 		else {
-			cout << "Error on line " << to_string(LineIndex) << ": correct identifier expected" << endl;
+			cout << "Error on line " << to_string(WordLine()) << ": correct identifier expected" << endl;
 			return false;
 		}
 	}
 	else {
-		cout << "Error on line " << to_string(LineIndex) << ": expected identifier" << endl;
+		cout << "Error on line " << to_string(WordLine()) << ": expected identifier" << endl;
 		return false;
 	}
 }
@@ -501,7 +533,7 @@ bool PascalTranslator::check_procedure() {
 				// Either ')' or variable list
 				// First check then enter loop
 				if (NextWord() == "") {
-					cout << "Error on line " << to_string(LineIndex) << ": ')' or variable list expected" << endl;
+					cout << "Error on line " << to_string(WordLine()) << ": ')' or variable list expected" << endl;
 					return false;
 				}
 				while (NextWord() != ")") {
@@ -517,17 +549,17 @@ bool PascalTranslator::check_procedure() {
 									if (NextWord() == ";") ToNext();
 								}
 								else {
-									cout << "Error on line " << to_string(LineIndex) << ": variable type expected (Integer/Boolean)" << endl;
+									cout << "Error on line " << to_string(WordLine()) << ": variable type expected (Integer/Boolean)" << endl;
 									return false;
 								}
 							}
 							else {
-								cout << "Error on line " << to_string(LineIndex) << ": unfinished script" << endl;
+								cout << "Error on line " << to_string(WordLine()) << ": unfinished script" << endl;
 								return false;
 							}
 						}
 						else {
-							cout << "Error on line " << to_string(LineIndex) << ": ':' expected" << endl;
+							cout << "Error on line " << to_string(WordLine()) << ": ':' expected" << endl;
 							return false;
 						}
 					}
@@ -567,42 +599,42 @@ bool PascalTranslator::check_procedure() {
 									}
 								}
 								else {
-									cout << "Error on line " << to_string(LineIndex) << ": code block expected" << endl;
+									cout << "Error on line " << to_string(WordLine()) << ": code block expected" << endl;
 									return false;
 								}
 							}
 							else {
-								cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+								cout << "Error on line " << to_string(WordLine()) << ": ';' expected" << endl;
 								return false;
 							}
 						}
 						else {
-							cout << "Error on line " << to_string(LineIndex) << ": var/begin expected" << endl;
+							cout << "Error on line " << to_string(WordLine()) << ": var/begin expected" << endl;
 							return false;
 						}
 					}
 					else {
-						cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+						cout << "Error on line " << to_string(WordLine()) << ": ';' expected" << endl;
 						return false;
 					}
 				}
 				else {
-					cout << "Error on line " << to_string(LineIndex) << ": ';' expected, but script ended" << endl;
+					cout << "Error on line " << to_string(WordLine()) << ": ';' expected, but script ended" << endl;
 					return false;
 				} 
 			}
 			else {
-				cout << "Error on line " << to_string(LineIndex) << ": expected '('" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": expected '('" << endl;
 				return false;
 			}
 		}
 		else {
-			cout << "Error on line " << to_string(LineIndex) << ": procedure identifier expected" << endl;
+			cout << "Error on line " << to_string(WordLine()) << ": procedure identifier expected" << endl;
 			return false;
 		}
 	}
 	else {
-		cout << "Error on line " << to_string(LineIndex) << ": procedure identifier expected" << endl;
+		cout << "Error on line " << to_string(WordLine()) << ": procedure identifier expected" << endl;
 		return false;
 	}
 }
@@ -621,7 +653,7 @@ bool PascalTranslator::check_op_part() {
 			// Current word is end
 			ToNext(); // ';'
 			if (CurrentWord() != ";") {
-				cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": ';' expected" << endl;
 				return false;
 			}
 			ToNext(); // whatever else, may be end
@@ -646,7 +678,7 @@ bool PascalTranslator::check_op_part_layer2() {
 			// Current word is end
 			ToNext(); // ';'
 			if (CurrentWord() != ";") {
-				cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": ';' expected" << endl;
 				return false;
 			}
 			ToNext(); // whatever else, may be end
@@ -702,33 +734,34 @@ bool PascalTranslator::operator_read() {
 			ToNext();
 			if (CurrentWord() == ";") return true;
 			else {
-				cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": ';' expected" << endl;
 				return false;
 			}
 		}
 		// Parameter is single identifier
 		if (!check_Name()) {
-			cout << "Error on line " << to_string(LineIndex) << ": correct identifier expected" << endl;
+			cout << "Error on line " << to_string(WordLine()) << ": correct identifier expected" << endl;
 			return false;
 		}
 		else {
 			ToNext();
 			if (CurrentWord() == ")") {
 				ToNext();
-				if (CurrentWord() == ";") return true;
+				if (CurrentWord() == ";") ToNext();
 				else {
-					cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+					cout << "Error on line " << to_string(WordLine()) << ": ';' expected" << endl;
 					return false;
 				}
+				return true;
 			}
 			else {
-				cout << "Error on line " << to_string(LineIndex) << ": ')' expected" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": ')' expected" << endl;
 				return false;
 			}
 		}
 	}
 	else {
-		cout << "Error on line " << to_string(LineIndex) << ": '(' expected" << endl;
+		cout << "Error on line " << to_string(WordLine()) << ": '(' expected" << endl;
 		return false;
 	}
 }
@@ -743,33 +776,34 @@ bool PascalTranslator::operator_write() {
 			ToNext();
 			if (CurrentWord() == ";") return true;
 			else {
-				cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": ';' expected" << endl;
 				return false;
 			}
 		}
 		// Parameter is single identifier
 		if (!expression()) {
-			cout << "Error on line " << to_string(LineIndex) << ": expression expected" << endl;
+			cout << "Error on line " << to_string(WordLine()) << ": expression expected" << endl;
 			return false;
 		}
 		else {
 			ToNext();
 			if (CurrentWord() == ")") {
 				ToNext();
-				if (CurrentWord() == ";") return true;
+				if (CurrentWord() == ";") ToNext();
 				else {
-					cout << "Error on line " << to_string(LineIndex) << ": ';' expected" << endl;
+					cout << "Error on line " << to_string(WordLine()) << ": ';' expected" << endl;
 					return false;
 				}
+				return true;
 			}
 			else {
-				cout << "Error on line " << to_string(LineIndex) << ": ')' expected" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": ')' expected" << endl;
 				return false;
 			}
 		}
 	}
 	else {
-		cout << "Error on line " << to_string(LineIndex) << ": '(' expected" << endl;
+		cout << "Error on line " << to_string(WordLine()) << ": '(' expected" << endl;
 		return false;
 	}
 }
@@ -789,23 +823,23 @@ bool PascalTranslator::operator_assign() {
 				if (ToNext()) {
 					if (CurrentWord() == ";") ToNext();
 					else {
-						cout << "Error on line " << to_string(LineIndex) << ": \';\' expected" << endl;
+						cout << "Error on line " << to_string(WordLine()) << ": \';\' expected" << endl;
 						return false;
 					}
 					return true;
 				}
 				else {
-					cout << "Error on line " << to_string(LineIndex) << ": \';\' expected" << endl;
+					cout << "Error on line " << to_string(WordLine()) << ": \';\' expected" << endl;
 					return false;
 				}
 			}
 			else {
-				cout << "Error on line " << to_string(LineIndex) << ": identifier or expression expected" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": identifier or expression expected" << endl;
 				return false;
 			}
 		}
 		else {
-			cout << "Error on line " << to_string(LineIndex) << ": ':=' expected" << endl;
+			cout << "Error on line " << to_string(WordLine()) << ": ':=' expected" << endl;
 			return false;
 		}
 		return false;
@@ -815,13 +849,109 @@ bool PascalTranslator::operator_assign() {
 // If operator
 bool PascalTranslator::operator_if() {
 	// Current word is if
-	
+	if (!ToNext()) {
+		cout << "Error on line " << to_string(WordLine()) << ": boolean expression expected" << endl;
+		return false;
+	}
+	if (!bool_expression()) {
+		cout << "Error on line " << to_string(WordLine()) << ": incorrect boolean expression" << endl;
+		return false;
+	}
+	else {
+		ToNext();
+		if (CurrentWord() == "then") {
+			if (ToNext()) {
+				if (CurrentWord() == "begin") {
+					if (check_op_part()) {
+						if (ToNext()) {
+							if (CurrentWord() == ";") ToNext();
+							else {
+								cout << "Error on line " << to_string(WordLine()) << ": \';\' expected" << endl;
+								return false;
+							}
+							return true;
+						}
+						else {
+							cout << "Error on line " << to_string(WordLine()) << ": \';\' expected" << endl;
+							return false;
+						}
+					}
+					else {
+						cout << "Error on line " << to_string(WordLine()) << ": incorrect if body" << endl;
+						return false;
+					}
+				}
+				else {
+					if (!check_operators()) {
+						cout << "Error on line " << to_string(WordLine()) << ": invalid operation" << endl;
+						return false;
+					}
+					else return true;
+				}
+			}
+			else{
+				cout << "Error on line " << to_string(WordLine()) << ": 'then' expected" << endl;
+				return false;
+			}
+		}
+		else {
+			cout << "Error on line " << to_string(WordLine()) << ": 'then' expected" << endl;
+			return false;
+		}
+	}
 	return false;
 }
 
 // while-do operator
 bool PascalTranslator::operator_while_do(){
 	// Current word is while
+	ToNext();
+	if (bool_expression()) {
+		if (NextWord()=="do") {
+			ToNext();
+			if (ToNext()) {
+				if (CurrentWord() == "begin") {
+					if (check_op_part()) {
+						if (ToNext()) {
+							if (CurrentWord() == ";") ToNext();
+							else {
+								cout << "Error on line " << to_string(WordLine()) << ": \';\' expected" << endl;
+								return false;
+							}
+							return true;
+						}
+						else {
+							cout << "Error on line " << to_string(WordLine()) << ": \';\' expected" << endl;
+							return false;
+						}
+					}
+					else {
+						cout << "Error on line " << to_string(WordLine()) << ": incorrect if body" << endl;
+						return false;
+					}
+				}
+				else {
+					if (!check_operators()) {
+						cout << "Error on line " << to_string(WordLine()) << ": invalid operation" << endl;
+						return false;
+					}
+					else return true;
+				}
+			}
+			else {
+				cout << "Error on line " << to_string(WordLine()) << ": 'then' expected" << endl;
+				return false;
+			}
+		}
+		else {
+			cout << "Error on line " << to_string(WordLine()) << ": 'do' expected" << endl;
+			return false;
+		}
+	}
+	else {
+		cout << "Error on line " << to_string(WordLine()) << ": boolean expression expected" << endl;
+		return false;
+	}
 	return false;
 }
 
@@ -864,7 +994,7 @@ bool PascalTranslator::assign_expr() {
 			// In trivial case we have a variable/number which is expression and a part of bool_expr
 			if (check_bool_operator_str(NextWord())||NextWord() == "or" || NextWord() == "and") {
 				if (!bool_expression()) {
-					cout << "Error on line " << to_string(LineIndex) << ": incorrect boolean expression" << endl;
+					cout << "Error on line " << to_string(WordLine()) << ": incorrect boolean expression" << endl;
 					return false;
 				}
 			}
@@ -872,7 +1002,8 @@ bool PascalTranslator::assign_expr() {
 			return true;
 		}
 		else {
-			cout << "Error on line " << to_string(LineIndex) << ": expression/boolean expression/procedure call expected" << endl;
+			if (bool_expression()) return true;
+			cout << "Error on line " << to_string(WordLine()) << ": expression/boolean expression/procedure call expected" << endl;
 			return false;
 		}
 		// else we have name or unknown symbol after name, which is incorrect
@@ -928,14 +1059,11 @@ bool PascalTranslator::paranthesis_sequence() {
 }
 
 
-
-
-
 //comparison
 bool PascalTranslator::comparison() {
 	if (expression() || (CurrentWord() == ")")) {
 		if (NextWord() == "") {
-			cout << "Error on line " << to_string(LineIndex) << ": boolean operator expected" << endl;
+			cout << "Error on line " << to_string(WordLine()) << ": boolean operator expected" << endl;
 			return false;
 		}
 		if (check_bool_operator_str(NextWord())) {
@@ -943,14 +1071,14 @@ bool PascalTranslator::comparison() {
 			ToNext();
 			// Now it HAS to be an expression
 			if (!ToNext()) {
-				cout << "Error on line " << to_string(LineIndex) << ": boolean expression expected" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": boolean expression expected" << endl;
 				return false;
 			}
-			if (expression()) 
-				// returns last expression part
+			if (expression()) {
 				return true;
+			}
 			else {
-				cout << "Error on line " << to_string(LineIndex) << ": incorrect boolean expression expected" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": incorrect boolean expression expected" << endl;
 				return false;
 			}
 		}
@@ -995,7 +1123,7 @@ bool PascalTranslator::bool_term() {
 bool PascalTranslator::bool_factor() {
 	if (CurrentWord() == "not") {
 		if (!ToNext()) {
-			cout << "Error on line " << to_string(LineIndex) << ": boolean expression expected" << endl;
+			cout << "Error on line " << to_string(WordLine()) << ": boolean expression expected" << endl;
 			return false;
 		}
 		else {
@@ -1004,49 +1132,21 @@ bool PascalTranslator::bool_factor() {
 	}
 	if (CurrentWord() == "(") {
 		ToNext();
-		
-		if (CurrentWord() == "not"
-			|| CurrentWord() == "true"
-			|| CurrentWord() == "false")
-			return bool_expression();
-
-		if (expression()) {
-			if (check_bool_operator_str(NextWord()) || NextWord() == "or" || NextWord() == "and") {
-				if (!bool_expression()) {
-					cout << "Error on line " << to_string(LineIndex) << ": incorrect boolean expression" << endl;
-					return false;
-				}
-				if (!ToNext()) {
-					cout << "Error on line " << to_string(LineIndex) << ": ')' expected" << endl;
-					return false;
-				}
-				if (CurrentWord() == ")")
-					return true;
-				else {
-					cout << "Error on line " << to_string(LineIndex) << ": ')' in boolean expression expected" << endl;
-					return false;
-				}
-			}
-			// Else it was just an arithmetic expression, which is incorrect
-			cout << "Error on line " << to_string(LineIndex) << ": boolean expression expected" << endl;
+		if (!bool_expression()) return false;
+		ToNext();
+		// Leave paranthesis sequence
+		if (CurrentWord() == ")") return true;
+		else {
 			return false;
 		}
-		
-		/*
-			
-		
-		else {
-			cout << "Error on line " << to_string(LineIndex) << ": boolean expression expected" << endl;
-			return false;
-		}*/
 	}
-	// Check for expression or True/False
+	// Else Check for name, comparison or True/False
 	return (CurrentWord() == "true"
 		|| CurrentWord() == "false"
 		// potential bug
 		|| comparison() 
 		//
-		|| expression());
+		|| check_Name());
 }
 // call proc
 bool PascalTranslator::call_proc() {
@@ -1072,13 +1172,13 @@ bool PascalTranslator::call_proc() {
 		if (ToNext()) {
 			if (CurrentWord() == ";") ToNext();
 			else {
-				cout << "Error on line " << to_string(LineIndex) << ": \';\' expected" << endl;
+				cout << "Error on line " << to_string(WordLine()) << ": \';\' expected" << endl;
 				return false;
 			}
 			return true;
 		}
 		else {
-			cout << "Error on line " << to_string(LineIndex) << ": \';\' expected" << endl;
+			cout << "Error on line " << to_string(WordLine()) << ": \';\' expected" << endl;
 			return false;
 		}
 	}
@@ -1091,14 +1191,44 @@ bool PascalTranslator::check_bool_operator_str(string str) {
 }
 // Bool paranthesis sequence check
 bool PascalTranslator::paranthesis_sequence_bool() {
-	if (CurrentWord() == "(") {
+	// for now it has already got '('
+	if (bool_expression()) {
+		// Finishes on )
+		return ToNext();
+	}
+	
+	/*if (CurrentWord() == "(") {
 		ToNext();
-		if (bool_expression()) {
-			if (CurrentWord() == ")") return true;
+		if (assign_expr()) {
+			if (CurrentWord() == ")")
+			{
+				ToNext();
+				return true;
+			}
 			else return false;
 		}
-		else return false;
-	}
+	*/
+		/*
+		if (expression()) {
+			// Current word after expression() is its last operator
+			// That lets us check whether the rest is boolean operator + smth, to detect boolean expression
+			// But for that we need to make sure that next word is a boolean operator
+			// In trivial case we have a variable/number which is expression and a part of bool_expr
+			if (check_bool_operator_str(NextWord()) || NextWord() == "or" || NextWord() == "and") {
+				if (!bool_expression()) {
+					cout << "Error on line " << to_string(WordLine()) << ": incorrect boolean expression" << endl;
+					return false;
+				}
+				else {
+					ToNext();
+					if (CurrentWord() == ")") return true;
+					else return false;
+				}
+			}
+			// Else it was just an arithmetic expression
+			return true;
+		}*/
+	
 	else return false;
 }
 

@@ -1,7 +1,7 @@
 ﻿  PascalTranslator.cpp
-M:\Усач\PascalMachine\Machine\PascalTranslator.cpp(396): warning C4715: PascalTranslator::check_var: значение возвращается не при всех путях выполнения
-M:\Усач\PascalMachine\Machine\PascalTranslator.cpp(440): warning C4715: PascalTranslator::check_variables_desc: значение возвращается не при всех путях выполнения
-M:\Усач\PascalMachine\Machine\PascalTranslator.cpp(362): warning C4715: PascalTranslator::check_Program_Keyword: значение возвращается не при всех путях выполнения
-M:\Усач\PascalMachine\Machine\PascalTranslator.cpp(608): warning C4715: PascalTranslator::check_procedure: значение возвращается не при всех путях выполнения
-M:\Усач\PascalMachine\Machine\PascalTranslator.cpp(693): warning C4715: PascalTranslator::check_operators: значение возвращается не при всех путях выполнения
+M:\Усач\PascalMachine\Machine\PascalTranslator.cpp(472): warning C4715: PascalTranslator::check_variables_desc: значение возвращается не при всех путях выполнения
+M:\Усач\PascalMachine\Machine\PascalTranslator.cpp(428): warning C4715: PascalTranslator::check_var: значение возвращается не при всех путях выполнения
+M:\Усач\PascalMachine\Machine\PascalTranslator.cpp(363): warning C4715: PascalTranslator::check_Program_Keyword: значение возвращается не при всех путях выполнения
+M:\Усач\PascalMachine\Machine\PascalTranslator.cpp(640): warning C4715: PascalTranslator::check_procedure: значение возвращается не при всех путях выполнения
+M:\Усач\PascalMachine\Machine\PascalTranslator.cpp(725): warning C4715: PascalTranslator::check_operators: значение возвращается не при всех путях выполнения
   Machine.vcxproj -> M:\Усач\PascalMachine\Machine\Debug\Machine.exe

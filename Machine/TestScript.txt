@@ -1,14 +1,25 @@
 Program whatever;
+var var1, var2, var3 :boolean;
 procedure proc1 (x, y, z : integer);
 begin
+if (not true or (a<>b) and (z=0)) then write(a);
+if (not true or (a<>b)) then
+begin
+write(a);
+while (a<>b) do
+begin
+a:=a+(b-a);
+write(b);
+end;
+end;
+if ((a<>b) and (z=0)) then write(a);
 end;
 
-var var1, var2, var3 :boolean;
 var var4, var5, var6 : integer;
 
 procedure proc2 (a, b : integer; a1, a2 : boolean);
 begin
-z := true or ((12+4)*a > b);
+z := true or (a*(12+4) > b);
 proc();
 proc(a,b,c,d);
 proc(a>b*c);
@@ -17,6 +28,8 @@ proc(a or (12 > -3*a));
 end;
 
 begin
-variable := s;
+variable := ((s+2)*(2*(2-3)));
 proc2(s > 0);
+while true do
+write(message);
 end.
